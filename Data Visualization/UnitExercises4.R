@@ -1,0 +1,85 @@
+data(attitude)
+
+# Part 1: Central Tendency
+
+print("Mean")
+apply(attitude, 2, mean)
+print("Median")
+apply(attitude, 2, median)
+print("Mode")
+apply(attitude, 2, mode)
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+apply(attitude, 2, getmode)
+print("Max")
+apply(attitude, 2, max)
+print("Min")
+apply(attitude, 2, min)
+print("Range")
+apply(attitude, 2, range)
+print("Quantile")
+apply(attitude, 2, quantile)
+print("IQR")
+apply(attitude, 2, IQR)
+print("Variance")
+var(attitude)
+print("Standard Deviation")
+apply(attitude, 2, sd)
+var(attitude)^0.5
+print("Correlation")
+cor(attitude)
+
+# Check
+summary(attitude)
+
+# Part 2: Plotting
+
+# make scatterplot for rating and complaints
+plot(attitude$rating, attitude$complaints, xlab="Rating", ylab="Complaints", main="Rating vs. Complaints")
+# make scatterplot for complaints and raises
+plot(attitude$complaints, attitude$raises, xlab="Complaints", ylab="Raises", main="Complaints vs. Raises")
+# make scatterplot for privileges and complaints
+plot(attitude$privileges, attitude$complaints, xlab="Privileges", ylab="Complaints", main="Privileges vs. Complaints")
+# make scatterplot for learning and raises
+plot(attitude$learning, attitude$raises, xlab="Learning", ylab="Raises", main="Learning vs. Raises")
+# make scatterplot for raises and rating
+plot(attitude$raises, attitude$rating, xlab="Raises", ylab="Rating", main="Raises vs. Rating")
+# make scatterplot for critical and raises
+plot(attitude$critical, attitude$raises, xlab="Critical", ylab="Raises", main="Critical vs. Raises")
+# make scatterplot for advance and raises
+plot(attitude$advance, attitude$raises, xlab="Advance", ylab="Raises", main="Advance vs. Raises")
+
+# make a histogram for all variables
+for (i in 1:ncol(attitude)) {
+  hist(attitude[,i], main=names(attitude)[i], xlab=names(attitude)[i])
+}
+
+# make boxplot
+par(mfrow=c(1,1))
+boxplot(attitude, main="Boxplot for Attitude Data", xlab="Variables")
+
+# Part 3: Matrix of Scatterplot, Histogram, and Boxplot
+# make a matrix of scatterplots
+pairs(attitude)
+par(mfrow=c(3,3))
+plot(attitude$rating, attitude$complaints, xlab="Rating", ylab="Complaints", main="Rating vs. Complaints")
+plot(attitude$complaints, attitude$raises, xlab="Complaints", ylab="Raises", main="Complaints vs. Raises")
+plot(attitude$privileges, attitude$complaints, xlab="Privileges", ylab="Complaints", main="Privileges vs. Complaints")
+plot(attitude$learning, attitude$raises, xlab="Learning", ylab="Raises", main="Learning vs. Raises")
+plot(attitude$raises, attitude$rating, xlab="Raises", ylab="Rating", main="Raises vs. Rating")
+plot(attitude$critical, attitude$raises, xlab="Critical", ylab="Raises", main="Critical vs. Raises")
+plot(attitude$advance, attitude$raises, xlab="Advance", ylab="Raises", main="Advance vs. Raises")
+
+# make a matrix of histograms
+par(mfrow=c(3,3))
+for (i in 1:ncol(attitude)) {
+  hist(attitude[,i], main=names(attitude)[i], xlab=names(attitude)[i])
+}
+
+# make a matrix of boxplots
+par(mfrow=c(3,3))
+for (i in 1:ncol(attitude)) {
+  boxplot(attitude[,i], main=names(attitude)[i], xlab=names(attitude)[i])
+}
