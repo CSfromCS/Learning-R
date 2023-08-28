@@ -1,0 +1,68 @@
+# A) Write a function that gets a number “n” bigger than 2 and returns (2*3*4*…..*n) If the number given to the function is less than 2 the function must return -1.
+
+factorial <- function(n) {
+  if (n < 2) {
+    return(-1)
+  } else {
+    answer <- 1
+    for (i in 2:n) {
+        answer <- answer * i
+    }
+    return(answer)
+  }
+}
+
+# B) Write a script and call your function then display the result when 10 is passed to the function.
+print(paste("Result when 10 is passed:", factorial(10)))
+
+
+# Calculate the minimum and maximum incomes in the city assigned to you.
+library(readr)
+data <- readr::read_csv("4063Midterm.csv")
+
+# City Toronto only
+myCity <- data[data$City == "Toronto",]
+
+# minimum income
+min(myCity$FamilyIncome)
+# maximum income
+max(myCity$FamilyIncome)
+
+# Calculate the median dollar amount spent on cosmetics in the city assigned to you.
+median(myCity$Cosmatics)
+
+# Calculate the median dollar amount spent on Grocery in the city assigned to you.
+median(myCity$Grocery)
+
+# Visualize the frequency of Male and Female customers in the city assigned to you using bar chart with two columns
+barplot(table(myCity$gender), main="Gender Frequency", col=c("#bd4b7d", "#44c7ce"))
+
+# A) Visualize the distribution of family income in the city assigned to you by a histogram. 
+hist(myCity$FamilyIncome, main="Family Income Distribution", xlab="Family Income", labels=TRUE, col="#44c7ce")
+
+
+# B) What is the mode for family income?
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(myCity$FamilyIncome)
+
+# A) Visualize the distribution of Years of education in the city assigned to you by a histogram. 
+hist(myCity$EdYears, main="Years of Education Distribution", xlab="Years of Education", labels=TRUE, col="#44c7ce")
+
+# B) What is the mode for Years of education?
+getmode(myCity$EdYears)
+
+# Visualize the distribution of Years of education for male and female using a set of two boxplots.
+boxplot(myCity$EdYears ~ myCity$gender, main="Education Years per Gender", xlab="Gender", ylab="Years of Education", col="#44c7ce")
+
+# Use a scatter plot of the association between “family income” and ”Years of education” to visualize the relationship in the city assigned to you
+plot(myCity$FamilyIncome, myCity$EdYears, main="Family Income vs. Years of Education", xlab="Family Income", ylab="Years of Education", col="#44c7ce")
+
+# Create a 3x3 matrix of scatter plots of associations that shows the associations between 3 variables cosmetics, family income, years of education; such that the diagonal shows the histogram for each variable and the upper panel shows the scatter plots for each combination and the lower panel shows the scatter plot for each combination.
+histogramPanel <- function(x, ...) {
+    par(new = TRUE)
+    hist(x, ...)
+}
+pairs(myCity[,c("Cosmatics", "FamilyIncome", "EdYears")], diag.panel=histogramPanel, main="Scatterplot Matrix for Cosmetics, Family Income, and Years of Education", label.pos=0.5, col="#44c7ce")    
