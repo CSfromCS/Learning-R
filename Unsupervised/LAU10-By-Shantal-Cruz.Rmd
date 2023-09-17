@@ -1,3 +1,11 @@
+---
+title: 'LAU10-By-Shantal-Cruz'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
 library(readr)
 data <- readr::read_csv("4063Midterm.csv")
 
@@ -59,3 +67,4 @@ library(gridExtra)
 grid.arrange(hc_cluster, km_cluster, ncol = 2, nrow = 1, top = "Hierarchical Clustering vs. K-Means Clustering", left = "Hierarchical Clustering", right = "K-Means Clustering")
 
 print("To determine what clustering is better will depend on many factors. We can quantitatively use different metrics that measure how separate and distinct the clusters are. We can also visually see what clustering makes more sense. In this scenario, both are very similar. However, I would say that the Hierarchical Clustering is better because it is more distinct and separate. K-Means Clustering on the other hand is more balanced and has a more even distribution between the two optimal groups.")
+```
