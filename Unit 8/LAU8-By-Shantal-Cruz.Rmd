@@ -1,0 +1,151 @@
+---
+title: 'LAU8-By-Shantal-Cruz'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+# Calculate the minimum and maximum incomes in the city assigned to you.
+library(readr)
+data <- readr::read_csv("4063Midterm.csv")
+
+# 1) Divide the data set to Train, Test Data Sets
+
+# Installing Packages
+# install.packages("e1071")
+# install.packages("caTools")
+# install.packages("caret")
+# install.packages("plotROC")
+ 
+# Loading package
+library(e1071)
+library(caTools)
+library(caret)
+library(class)
+library(pROC)
+library(ROCR)
+ 
+# # Splitting data into train
+# # and test data
+# split <- sample.split(data, SplitRatio = 0.7)
+# train_cl <- subset(data, split == "TRUE")
+# test_cl <- subset(data, split == "FALSE")
+
+# randomize data
+set.seed(123)
+data <- data[sample(nrow(data)),] # shuffle
+
+# convert string data to numerical factors
+# data$gender <- as.numeric(factor(data$gender))
+data$City <- as.numeric(factor(data$City))
+data$Fname <- as.numeric(factor(data$Fname))
+data$Lname <- as.numeric(factor(data$Lname))
+
+# remove ID and gender columns
+x <- data[,c(-1, -4, -11)]
+y <- data[4]
+
+# 70% of the sample size
+smp_size <- floor(0.7 * nrow(data))
+
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
+
+x_train <- x[train_ind, ]
+x_test <- x[-train_ind, ]
+
+y_train <- y[train_ind, ]
+y_test <- y[-train_ind, ]
+
+# 2) Use Naive Bayes Classifier for predicting whether the customer was male or female
+ 
+# Fitting Naive Bayes Model
+# to training dataset
+nb <- naiveBayes(x = x_train, y = y_train)
+nb
+
+# Predicting on test data
+y_pred_nb <- predict(nb, newdata = x_test)
+
+# getting probability of males for ROC
+y_pred_nb_probM <- predict(nb, newdata = x_test, "raw")[,2]
+y_pred_nb_probM
+
+# 3) Use caret::confusionMatrix to construct the confusion matrix for your Naive Bayes Classifier Model
+cm_nb = caret::confusionMatrix(y_pred_nb, as.factor(y_test$gender))
+
+
+# 4) Use K-Nearest Neighbor for predicting whether the customer was male or female?
+
+# Feature Scaling
+x_train_scale <- scale(x_train)
+x_test_scale <- scale(x_test)
+
+# Fitting K-NN to training set
+# get best k
+best_accuracy <- 0
+best_k <- 0
+for (i in 1:50) {
+    knn_model <- caret::knn3(x = x_train_scale, y = factor(y_train$gender), k = i, prob = TRUE)
+    y_pred_knn <- predict(knn_model, newdata = x_test_scale, type = "class")
+    # print accuracy and k
+    accuracy <- mean(y_pred_knn == y_test$gender)
+    if (accuracy > best_accuracy) {
+        best_accuracy <- accuracy
+        best_k <- i
+    }
+    # print(paste("Accuracy is", mean(y_pred_knn == y_test$gender), "for k =", i))
+}
+print(paste("Best accuracy is", best_accuracy, "for k =", best_k))
+
+
+knn_model <- caret::knn3(x = x_train_scale, y = factor(y_train$gender), k = best_k, prob = TRUE)
+knn_model
+y_pred_knn <- predict(knn_model, newdata = x_test_scale, type = "class")
+y_pred_knn
+
+# getting probability of M for ROC
+y_pred_knn_probM <- predict(knn_model, newdata = x_test_scale)[,2]
+y_pred_knn_probM
+
+
+# 5) Use caret::confusionMatrix to construct the confusion matrix for your K-Nearest Neighbor
+cm_knn = caret::confusionMatrix(y_pred_knn, as.factor(y_test$gender))
+cm_knn
+
+# 6) Compare your two models using sensitivity, specificity.
+# get sensitivity, specificity for NB
+sensitivity_nb <- cm_nb$byClass[1]
+print(paste("Sensitivity for Naive Bayes is", sensitivity_nb))
+specificity_nb <- cm_nb$byClass[2]
+print(paste("Specificity for Naive Bayes is", specificity_nb))
+
+# get sensitivity, specificity for KNN
+sensitivity_knn <- cm_knn$byClass[1]
+print(paste("Sensitivity for K-Nearest-Neighbors is", sensitivity_knn))
+specificity_knn <- cm_knn$byClass[2]
+print(paste("Specificity for K-Nearest-Neighbors is", specificity_knn))
+
+
+# 7) Compare the ROC charts of your two models.
+par(pty="s")
+
+roc_nb <- pROC::roc(y_test$gender, y_pred_nb_probM, plot=TRUE, legacy.axes = TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage", main="ROC curve - Naive Bayes vs KNN", percent=TRUE, col="blue", lwd=2, print.auc=TRUE)
+plot.roc(y_test$gender, y_pred_knn_probM, percent=TRUE, col="red", lwd=2, print.auc=TRUE, add=TRUE, print.auc.y=40)
+
+legend("bottomright", legend = c("Naive Bayes", "K-Nearest-Neighbors"), col = c("blue", "red"), lwd = 2)
+ 
+
+# 8) Compare the lift charts of your two models.
+# lift chart for Naive Bayes
+pred_nb <- prediction(y_pred_nb_probM, y_test$gender)
+perf_nb <- performance(pred_nb, "lift", "rpp")
+plot(perf_nb, main="Lift Chart - Naive Bayes vs KNN", col="blue", lwd=2)
+
+# lift chart for KNN
+pred_knn <- prediction(y_pred_knn_probM, y_test$gender)
+perf_knn <- performance(pred_knn, "lift", "rpp")
+plot(perf_knn, col="red", lwd=2, add=TRUE)
+
+legend("bottomleft", legend = c("Naive Bayes", "K-Nearest-Neighbors"), col = c("blue", "red"), lwd = 2)
+```
