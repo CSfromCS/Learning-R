@@ -1,0 +1,152 @@
+library(readr)
+library(ROCR)
+library(caret)
+library(caTools)
+library(class)
+library(pROC)
+library(factoextra)
+
+data <- readr::read_csv("DatasetforFINAL.csv")
+
+# City Toronto only
+myCity <- data[data$City == "Vancouver", ]
+
+# View(myCity)
+
+############################################
+# 1) Divide the data set to Train and Test Data Sets
+# 70% of the data for training and 30% for testing
+
+set.seed(4063)
+spl <- sample.split(myCity$boughtelectronics, SplitRatio = 0.7)
+
+train <- myCity[spl == TRUE, ]
+test <- myCity[spl == FALSE, ]
+train
+
+############################################
+# 2a) Use the train data and create a Naïve Bayes Classifier for predicting whether the customer will buy electronics based on the combination of two variables family income and family size.
+
+library(e1071)
+nb <- e1071::naiveBayes(boughtelectronics ~ FamilyIncome + FamilySize, data = train)
+
+# 2b) Use the test data and your model and make predictions regarding whether the customer will buy electronics based on the combination of two variables family income and family size.
+
+nb_pred <- predict(nb, newdata = test)
+nb_pred
+
+############################################
+# 3a) Use the train data and K-Nearest Neighbor Classifier for predicting whether the customer will buy electronics based on the combination of two variables Educational Years and family size.
+
+# determine best k first
+best_accuracy <- 0
+best_k <- 0
+for (i in 1:10) {
+    knn_model <- caret::knn3(x = train[, c("EdYears", "FamilySize")], y = factor(train$boughtelectronics), k = i)
+
+    knn_pred <- predict(knn_model, newdata = test[, c("EdYears", "FamilySize")], type = "class")
+
+    accuracy <- mean(knn_pred == test$boughtelectronics)
+    # print(paste("Accuracy is", accuracy, "for k =", i))
+    if (accuracy > best_accuracy) {
+        best_accuracy <- accuracy
+        best_k <- i
+    }
+}
+# plot(test$EdYears, test$FamilySize, col = factor(test$boughtelectronics), pch = 19, cex = 5, main = paste("k = true"))
+# print(paste("Best accuracy is k =", best_k))
+
+knn_model <- caret::knn3(x = train[, c("EdYears", "FamilySize")], y = factor(train$boughtelectronics), k = best_k)
+knn_model
+
+# 3b) Use the test data and your model and make predictions regarding whether the customer will buy electronics based on the combination of two variables Educational Years and family size.
+
+knn_pred <- predict(knn_model, newdata = test[, c("EdYears", "FamilySize")], type = "class")
+knn_pred
+
+############################################
+# 4a) Compose the confusion matrix of   Naive Bayes Classifier
+nb_cm <- caret::confusionMatrix(nb_pred, as.factor(test$boughtelectronics))
+nb_cm
+
+
+# Compose the confusion matrix of K-Nearest Neighbor
+knn_cm <- caret::confusionMatrix(knn_pred, as.factor(test$boughtelectronics))
+knn_cm
+
+# Decide which model has better accuracy.
+print(paste("Naive Bayes accuracy:", nb_cm$overall["Accuracy"]))
+print(paste("KNN accuracy:", knn_cm$overall["Accuracy"]))
+print("Naive Bayes has better accuracy than K-Nearest Neighbor.")
+
+############################################
+# 4b) Compose the ROC, gain and lift charts of the Naive Bayes model
+
+# get probability of buying electronics
+nb_pred_prob <- predict(nb, newdata = test, type = "raw")[, 2]
+
+par(pty = "s")
+
+nb_roc <- pROC::roc(test$boughtelectronics, nb_pred_prob)
+plot(nb_roc, col = "red", main = "Naive Bayes ROC Curve", print.auc = TRUE)
+
+nb_prediction <- prediction(nb_pred_prob, test$boughtelectronics)
+nb_perf <- performance(nb_prediction, "lift", x.measure = "rpp")
+plot(nb_perf, col = "red", main = "Naive Bayes Lift Chart")
+
+
+# Compose the ROC, gain and lift charts of the K-Nearest Neighbor model
+knn_pred_prob <- predict(knn_model, newdata = test[, c("EdYears", "FamilySize")])[, 2]
+
+knn_roc <- pROC::roc(test$boughtelectronics, knn_pred_prob)
+plot(knn_roc, col = "blue", main = "K-Nearest Neighbor ROC Curve", print.auc = TRUE)
+
+knn_prediction <- prediction(knn_pred_prob, test$boughtelectronics)
+knn_perf <- performance(knn_prediction, "lift", x.measure = "rpp")
+plot(knn_perf, col = "blue", main = "K-Nearest Neighbor Lift Chart")
+
+
+# Which model is better? Argue why?
+print("Naive Bayes is better because it has a higher AUC and higher lift than the K-Nearest Neighbor model. The Naive Bayes model also has a higher accuracy than the K-Nearest Neighbor model. A higher AUC means that the model is better at distinguishing between the two classes. A higher lift means that the model is better at predicting the positive class.")
+
+
+############################################
+# 5) Use k-means clustering, what would be an optimum model that would cluster the buyers based on family income and family size?  develop a K-Means  model for clustering and Visualize your clusters.
+
+
+# silhouette method
+km_s <- factoextra::fviz_nbclust(myCity[, c("FamilyIncome", "FamilySize")], FUNcluster = kmeans, method = "silhouette", k.max = 7)
+km_s <- km_s$data
+km_optimal_k <- as.numeric(km_s$clusters[which.max(km_s$y)])
+print(paste("Optimum number of k-means clusters is", km_optimal_k))
+
+# K-Means Clustering
+km <- stats::kmeans(myCity[, c("FamilyIncome", "FamilySize")], centers = km_optimal_k)
+
+# plot kmeans nicely
+km_cluster <- factoextra::fviz_cluster(list(data = myCity[, c("FamilyIncome", "FamilySize")], cluster = km$cluster))
+print(km_cluster)
+
+
+############################################
+# 6) Using Hierarchical Clustering what is optimum number of  clusters of customers do you detect based on EdYears  and  FamilySize? develop a Hierarchical clustering  model and Visualize your clusters.
+hc_s <- factoextra::fviz_nbclust(myCity[, c("EdYears", "FamilySize")], FUNcluster = hcut, method = "silhouette", k.max = 7)
+hc_s <- hc_s$data
+hc_optimal_k <- as.numeric(hc_s$clusters[which.max(hc_s$y)])
+
+print(paste("Optimum number of heirarchical clusters is", hc_optimal_k))
+
+# Hierarchical Clustering
+hc <- stats::hclust(dist(myCity[, c("EdYears", "FamilySize")]))
+cut_tree <- cutree(hc, k = hc_optimal_k)
+
+# Visualize the dendrogram
+dend <- as.dendrogram(hc)
+print(dend)
+
+# Create a clustering object using cut_tree
+hc_cluster <- factoextra::fviz_cluster(list(data = myCity[, c("EdYears", "FamilySize")], cluster = cut_tree))
+hc_cluster
+
+# Plot the clustering object
+print(hc_cluster)
